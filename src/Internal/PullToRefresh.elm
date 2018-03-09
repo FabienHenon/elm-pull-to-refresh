@@ -31,6 +31,7 @@ type alias Config msg =
     , animationEasingFunc : Easing
     , animationDuration : Time
     , refreshCmd : Cmd msg
+    , manualScroll : Bool
     }
 
 

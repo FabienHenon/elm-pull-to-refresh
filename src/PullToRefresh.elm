@@ -18,6 +18,8 @@ module PullToRefresh
         , withAnimationDuration
         , subscriptions
         , withRefreshCmd
+        , withManualScroll
+        , cmdFromScrollEvent
         )
 
 {-| Pull to refresh behavior in `Elm`.
@@ -34,9 +36,13 @@ This is working with mouse of touches.
 
 @docs init, update, view, subscriptions, canPullToRefresh, stopLoading
 
+# Advanced
+
+@docs cmdFromScrollEvent
+
 # Config
 
-@docs config, withMaxDistance, withTriggerDistance, withPullContent, withReleaseContent, withLoadingContent, withAnimationEasingFunc, withAnimationDuration, withRefreshCmd
+@docs config, withMaxDistance, withTriggerDistance, withPullContent, withReleaseContent, withLoadingContent, withAnimationEasingFunc, withAnimationDuration, withRefreshCmd, withManualScroll
 -}
 
 import Internal.PullToRefresh as Internal
@@ -97,6 +103,7 @@ config id =
         , animationEasingFunc = Ease.inOutQuad
         , animationDuration = 150 * millisecond
         , refreshCmd = Cmd.none
+        , manualScroll = False
         }
 
 
@@ -182,6 +189,16 @@ withRefreshCmd refreshCmd (Config config) =
     Config { config | refreshCmd = refreshCmd }
 
 
+{-| Wether you want to handle scroll event yourself or not.
+
+**Only do this if you have another module that needs scroll events on the same element.
+See `cmdFromScrollEvent` function for more information on usage.
+-}
+withManualScroll : Bool -> Config msg -> Config msg
+withManualScroll manualScroll (Config config) =
+    Config { config | manualScroll = manualScroll }
+
+
 {-| Initializes the module.
 You must pass it a `Config` object
 
@@ -252,6 +269,71 @@ update mapper msg (Config config) (Model model) =
             ( Model { model | state = Internal.updateAnim config.animationDuration diff model.state }, Cmd.none )
 
 
+{-| **Only use this function if you handle `on "scroll"` event yourself**
+_(for instance if another package is also using the scroll event on the same node)_
+
+The function returns a `Cmd msg` that will perform the model update normally done with `PullToRefresh` module.
+You have to pass it a `Json.Decode.Value` directly coming from `on "scroll"` event
+
+**To use this function you must allow manual scrolling using `withManualScroll True` in the `Config`.**
+
+    type Msg
+        = PtrMsg Ptr.Msg
+        | OnScroll JsonDecoder.Value
+
+    pullToRefreshConfig : Ptr.Config Msg
+    pullToRefreshConfig =
+        Ptr.config "tets-id"
+            |> Ptr.withManualScroll True
+
+    view : Model -> Html Msg
+    view model =
+        div
+            [ style
+                [ ( "border", "1px solid #000" )
+                , ( "margin", "auto" )
+                , ( "height", "500px" )
+                , ( "width", "300px" )
+                , ( "position", "relative" )
+                ]
+            ]
+            [ PR.view PullToRefreshMsg
+                pullToRefreshConfig
+                model.pullToRefresh
+                [ style
+                    [ ( "border", "1px solid #000" )
+                    , ( "margin", "auto" )
+                    ]
+                , on "scroll" (JsonDecoder.map OnScroll JsonDecoder.value)
+                ]
+                (model.content)
+            ]
+
+    update : Msg -> Model -> ( Model, Cmd Msg )
+    update msg model =
+        case msg of
+            -- ... --
+
+            PtrMsg msg_ ->
+                let
+                    ( ptr, cmd ) =
+                        Ptr.update PtrMsg msg_ config model.ptr
+                in
+                    ( { model | ptr = ptr }, cmd )
+
+            OnScroll value ->
+                ( model, Ptr.cmdFromScrollEvent PtrMsg value )
+-}
+cmdFromScrollEvent : (Msg -> msg) -> JD.Value -> Cmd msg
+cmdFromScrollEvent mapper value =
+    case JD.decodeValue (JD.map OnScroll Internal.decodeScrollPos) value of
+        Ok msg ->
+            Task.perform mapper <| Task.succeed msg
+
+        Err _ ->
+            Cmd.none
+
+
 {-| View that displays your content and handles the pull to refresh behavior.
 
     config : Config Msg
@@ -313,8 +395,12 @@ view mapper (Config config) (Model model) attrs content =
                              ]
                             )
                        , Attributes.id config.id
-                       , Attributes.map mapper <| Events.on "scroll" (JD.map OnScroll Internal.decodeScrollPos)
                        ]
+                    ++ (if config.manualScroll then
+                            []
+                        else
+                            [ Attributes.map mapper <| Events.on "scroll" (JD.map OnScroll Internal.decodeScrollPos) ]
+                       )
                     ++ (if canPullToRefresh (Model model) then
                             addPullToRefreshAttributes mapper (Model model)
                         else
