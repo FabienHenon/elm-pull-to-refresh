@@ -384,16 +384,15 @@ view mapper (Config config) (Model model) attrs content =
             , div
                 (attrs
                     ++ [ style
-                            ([ ( "position", "absolute" )
-                             , ( "margin", "0" )
-                             , ( "padding", "0" )
-                             , ( "overflow", "auto" )
-                             , ( "left", "0" )
-                             , ( "top", (toString yPos) ++ "px" )
-                             , ( "bottom", "0" )
-                             , ( "right", "0" )
-                             ]
-                            )
+                            [ ( "position", "absolute" )
+                            , ( "margin", "0" )
+                            , ( "padding", "0" )
+                            , ( "overflow", "auto" )
+                            , ( "left", "0" )
+                            , ( "top", (toString yPos) ++ "px" )
+                            , ( "right", "0" )
+                            , ( "height", "100%" )
+                            ]
                        , Attributes.id config.id
                        ]
                     ++ (if config.manualScroll then
@@ -475,7 +474,7 @@ addPullToRefreshAttributes mapper (Model model) =
     ([ Attributes.map mapper <| onMouseDown OnDown
      , Attributes.map mapper <| Touch.onStart (Touch.locate >> OnDown)
      , Attributes.map mapper <| onMouseUp OnUp
-     , Attributes.map mapper <| Touch.onEnd (Touch.locate >> OnUp)
+     , Attributes.map mapper <| Touch.onEndWithOptions { stopPropagation = False, preventDefault = False } (Touch.locate >> OnUp)
      ]
         ++ (if Internal.isStarted model.state then
                 [ Attributes.map mapper <| onMouseMove OnMove

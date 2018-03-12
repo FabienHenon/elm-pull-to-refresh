@@ -130,7 +130,7 @@ reset triggerDist maxDist state =
             state
 
         Start initial ->
-            Ending (yPos maxDist initial initial) 0
+            None
 
         Moving initial position ->
             Ending (yPos maxDist initial position) 0

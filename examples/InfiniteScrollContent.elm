@@ -44,7 +44,7 @@ initModel pullToRefresh =
 pullToRefreshConfig : PR.Config Msg
 pullToRefreshConfig =
     PR.config "content-id"
-        |> PR.withRefreshCmd Cmd.none
+        |> PR.withRefreshCmd loadContent
         |> PR.withManualScroll True
 
 
@@ -81,8 +81,11 @@ update msg model =
             let
                 infScroll =
                     IS.stopLoading model.infScroll
+
+                ptrCmd =
+                    PR.stopLoading PullToRefreshMsg
             in
-                ( { model | infScroll = infScroll }, Cmd.none )
+                ( { model | infScroll = infScroll }, ptrCmd )
 
         OnDataRetrieved (Ok result) ->
             let
@@ -91,8 +94,11 @@ update msg model =
 
                 infScroll =
                     IS.stopLoading model.infScroll
+
+                ptrCmd =
+                    PR.stopLoading PullToRefreshMsg
             in
-                ( { model | content = content, infScroll = infScroll }, Cmd.none )
+                ( { model | content = content, infScroll = infScroll }, ptrCmd )
 
         OnScroll value ->
             ( model
