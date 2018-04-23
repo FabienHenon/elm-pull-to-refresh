@@ -13,6 +13,7 @@ module PullToRefresh
         , withPullContent
         , withReleaseContent
         , withLoadingContent
+        , withMinLoadingDuration
         , stopLoading
         , withAnimationEasingFunc
         , withAnimationDuration
@@ -42,7 +43,7 @@ This is working with mouse of touches.
 
 # Config
 
-@docs config, withMaxDistance, withTriggerDistance, withPullContent, withReleaseContent, withLoadingContent, withAnimationEasingFunc, withAnimationDuration, withRefreshCmd, withManualScroll
+@docs config, withMaxDistance, withTriggerDistance, withPullContent, withReleaseContent, withLoadingContent, withAnimationEasingFunc, withAnimationDuration, withRefreshCmd, withManualScroll, withMinLoadingDuration
 -}
 
 import Internal.PullToRefresh as Internal
@@ -56,6 +57,7 @@ import Touch
 import Time exposing (Time, second, millisecond)
 import AnimationFrame
 import Ease exposing (Easing)
+import Process
 
 
 {-| Model to keep in your module's state
@@ -77,8 +79,9 @@ type Msg
     | OnScroll Float
     | OnDown Internal.Position
     | OnUp Internal.Position
+    | OnUpWithTime Internal.Position Time
     | OnMove Internal.Position
-    | OnReset ()
+    | OnReset Time
     | OnUpdateFrame Time
 
 
@@ -104,6 +107,7 @@ config id =
         , animationDuration = 150 * millisecond
         , refreshCmd = Cmd.none
         , manualScroll = False
+        , minLoadingDuration = 500 * millisecond
         }
 
 
@@ -199,6 +203,13 @@ withManualScroll manualScroll (Config config) =
     Config { config | manualScroll = manualScroll }
 
 
+{-| Sets a minimum duration to wait before hiding the loading icon, even if `stopLoading` has been called
+-}
+withMinLoadingDuration : Time -> Config msg -> Config msg
+withMinLoadingDuration minLoadingDuration (Config config) =
+    Config { config | minLoadingDuration = minLoadingDuration }
+
+
 {-| Initializes the module.
 You must pass it a `Config` object
 
@@ -245,8 +256,11 @@ update mapper msg (Config config) (Model model) =
             ( Model { model | state = Internal.start pos model.state }, Cmd.none )
 
         OnUp pos ->
+            ( Model model, Task.perform (OnUpWithTime pos) Time.now |> Cmd.map mapper )
+
+        OnUpWithTime pos startTime ->
             if (Internal.getContentTopPosition config model.state) >= config.triggerDist then
-                ( Model { model | state = Internal.end config.maxDist pos model.state, loading = True }
+                ( Model { model | state = Internal.end config.maxDist pos model.state, loading = True, startLoading = startTime }
                 , config.refreshCmd
                 )
             else
@@ -259,8 +273,17 @@ update mapper msg (Config config) (Model model) =
             in
                 ( Model { model | state = newState }, Cmd.none )
 
-        OnReset () ->
-            ( Model { model | loading = False, state = Internal.reset config.triggerDist config.maxDist model.state }, Cmd.none )
+        OnReset time ->
+            if time >= (model.startLoading + config.minLoadingDuration) then
+                ( Model { model | loading = False, state = Internal.reset config.triggerDist config.maxDist model.state }, Cmd.none )
+            else
+                -- We delay reset
+                ( Model model
+                , Process.sleep ((model.startLoading + config.minLoadingDuration) - time)
+                    |> Task.andThen (always Time.now)
+                    |> Task.perform OnReset
+                    |> Cmd.map mapper
+                )
 
         NoOp () ->
             ( Model model, Cmd.none )
@@ -426,7 +449,7 @@ canPullToRefresh (Model { currScrollY }) =
 -}
 stopLoading : (Msg -> msg) -> Cmd msg
 stopLoading mapper =
-    Cmd.map mapper <| Task.perform OnReset (Task.succeed ())
+    Cmd.map mapper <| Task.perform OnReset Time.now
 
 
 {-| Subscriptions for this module

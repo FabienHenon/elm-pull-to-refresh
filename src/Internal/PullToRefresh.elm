@@ -18,6 +18,7 @@ type alias Model =
     { currScrollY : Float
     , state : State
     , loading : Bool
+    , startLoading : Time
     }
 
 
@@ -32,6 +33,7 @@ type alias Config msg =
     , animationDuration : Time
     , refreshCmd : Cmd msg
     , manualScroll : Bool
+    , minLoadingDuration : Time
     }
 
 
@@ -40,6 +42,7 @@ initModel config =
     { currScrollY = 0.0
     , state = None
     , loading = False
+    , startLoading = 0
     }
 
 
