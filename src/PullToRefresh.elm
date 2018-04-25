@@ -21,6 +21,7 @@ module PullToRefresh
         , withRefreshCmd
         , withManualScroll
         , cmdFromScrollEvent
+        , isLoading
         )
 
 {-| Pull to refresh behavior in `Elm`.
@@ -35,7 +36,7 @@ This is working with mouse of touches.
 
 # Use
 
-@docs init, update, view, subscriptions, canPullToRefresh, stopLoading
+@docs init, update, view, subscriptions, canPullToRefresh, stopLoading, isLoading
 
 # Advanced
 
@@ -355,6 +356,13 @@ cmdFromScrollEvent mapper value =
 
         Err _ ->
             Cmd.none
+
+
+{-| Returns `True` if it's currently loading
+-}
+isLoading : Model -> Bool
+isLoading (Model { loading }) =
+    loading
 
 
 {-| View that displays your content and handles the pull to refresh behavior.
