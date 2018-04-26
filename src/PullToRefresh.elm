@@ -418,7 +418,7 @@ view mapper (Config config) (Model model) attrs content =
                             [ ( "position", "absolute" )
                             , ( "margin", "0" )
                             , ( "padding", "0" )
-                            , ( "overflow", "auto" )
+                            , ( "overflow", "scroll" )
                             , ( "left", "0" )
                             , ( "top", (toString yPos) ++ "px" )
                             , ( "right", "0" )
@@ -431,7 +431,7 @@ view mapper (Config config) (Model model) attrs content =
                         else
                             [ Attributes.map mapper <| Events.on "scroll" (JD.map OnScroll Internal.decodeScrollPos) ]
                        )
-                    ++ (if canPullToRefresh (Model model) then
+                    ++ (if canPullToRefresh (Model model) || Internal.isStarted model.state then
                             addPullToRefreshAttributes mapper (Model model)
                         else
                             []
@@ -447,7 +447,7 @@ It's actually not pullable if the inner content has a scrollbar and this scrollb
 -}
 canPullToRefresh : Model -> Bool
 canPullToRefresh (Model { currScrollY }) =
-    currScrollY == 0
+    currScrollY <= 0
 
 
 {-| You must call this function has soon has your refresh `Cmd` is finished executing so that the pull to refresh can be stopped
