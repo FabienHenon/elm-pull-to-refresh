@@ -251,26 +251,26 @@ update : (Msg -> msg) -> Msg -> Config msg -> Model -> ( Model, Cmd msg )
 update mapper msg (Config config) (Model model) =
     case msg of
         OnScroll scrollY ->
-            ( Model { model | currScrollY = scrollY }, Cmd.none )
+            ( Model { model | currScrollY = Debug.log "SCROLL Y" scrollY }, Cmd.none )
 
         OnDown pos ->
-            ( Model { model | state = Internal.start pos model.state }, Cmd.none )
+            ( Model { model | state = Debug.log "STATE DOWN" <| Internal.start pos model.state }, Cmd.none )
 
         OnUp pos ->
             ( Model model, Task.perform (OnUpWithTime pos) Time.now |> Cmd.map mapper )
 
         OnUpWithTime pos startTime ->
             if (Internal.getContentTopPosition config model.state) >= config.triggerDist then
-                ( Model { model | state = Internal.end config.maxDist pos model.state, loading = True, startLoading = startTime }
+                ( Model { model | state = Debug.log "STATE UP" <| Internal.end config.maxDist pos model.state, loading = True, startLoading = startTime }
                 , config.refreshCmd
                 )
             else
-                ( Model { model | state = Internal.reset config.triggerDist config.maxDist model.state }, Cmd.none )
+                ( Model { model | state = Debug.log "STATE UP" <| Internal.reset config.triggerDist config.maxDist model.state }, Cmd.none )
 
         OnMove pos ->
             let
                 newState =
-                    Internal.move pos model.state
+                    Debug.log "STATE MOVE" <| Internal.move pos model.state
             in
                 ( Model { model | state = newState }, Cmd.none )
 
