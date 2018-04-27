@@ -1,0 +1,127 @@
+[
+  {
+    "name": "PullToRefresh",
+    "comment": " Pull to refresh behavior in `Elm`.\n\nYou define a `Cmd` to be executed as soon as the screen is released after pulling it.\n\nThis is working with mouse of touches.\n\n# Types\n\n@docs Model, Config, Msg\n\n# Use\n\n@docs init, update, view, subscriptions, canPullToRefresh, stopLoading, isLoading\n\n# Advanced\n\n@docs cmdFromScrollEvent\n\n# Config\n\n@docs config, withMaxDistance, withTriggerDistance, withPullContent, withReleaseContent, withLoadingContent, withAnimationEasingFunc, withAnimationDuration, withRefreshCmd, withManualScroll, withMinLoadingDuration\n",
+    "aliases": [],
+    "types": [
+      {
+        "name": "Config",
+        "comment": " Config object to use with this module\n",
+        "args": [
+          "msg"
+        ],
+        "cases": []
+      },
+      {
+        "name": "Model",
+        "comment": " Model to keep in your module's state\n",
+        "args": [],
+        "cases": []
+      },
+      {
+        "name": "Msg",
+        "comment": " Messages to delegate to this module\n",
+        "args": [],
+        "cases": []
+      }
+    ],
+    "values": [
+      {
+        "name": "canPullToRefresh",
+        "comment": " Returns `True` if the view is pullable, `False` if it's not.\n\nIt's actually not pullable if the inner content has a scrollbar and this scrollbar is not at its top position\n",
+        "type": "PullToRefresh.Model -> Bool"
+      },
+      {
+        "name": "cmdFromScrollEvent",
+        "comment": " **Only use this function if you handle `on \"scroll\"` event yourself**\n_(for instance if another package is also using the scroll event on the same node)_\n\nThe function returns a `Cmd msg` that will perform the model update normally done with `PullToRefresh` module.\nYou have to pass it a `Json.Decode.Value` directly coming from `on \"scroll\"` event\n\n**To use this function you must allow manual scrolling using `withManualScroll True` in the `Config`.**\n\n    type Msg\n        = PtrMsg Ptr.Msg\n        | OnScroll JsonDecoder.Value\n\n    pullToRefreshConfig : Ptr.Config Msg\n    pullToRefreshConfig =\n        Ptr.config \"tets-id\"\n            |> Ptr.withManualScroll True\n\n    view : Model -> Html Msg\n    view model =\n        div\n            [ style\n                [ ( \"border\", \"1px solid #000\" )\n                , ( \"margin\", \"auto\" )\n                , ( \"height\", \"500px\" )\n                , ( \"width\", \"300px\" )\n                , ( \"position\", \"relative\" )\n                ]\n            ]\n            [ PR.view PullToRefreshMsg\n                pullToRefreshConfig\n                model.pullToRefresh\n                [ style\n                    [ ( \"border\", \"1px solid #000\" )\n                    , ( \"margin\", \"auto\" )\n                    ]\n                , on \"scroll\" (JsonDecoder.map OnScroll JsonDecoder.value)\n                ]\n                (model.content)\n            ]\n\n    update : Msg -> Model -> ( Model, Cmd Msg )\n    update msg model =\n        case msg of\n            -- ... --\n\n            PtrMsg msg_ ->\n                let\n                    ( ptr, cmd ) =\n                        Ptr.update PtrMsg msg_ config model.ptr\n                in\n                    ( { model | ptr = ptr }, cmd )\n\n            OnScroll value ->\n                ( model, Ptr.cmdFromScrollEvent PtrMsg value )\n",
+        "type": "(PullToRefresh.Msg -> msg) -> Json.Decode.Value -> Platform.Cmd.Cmd msg"
+      },
+      {
+        "name": "config",
+        "comment": " Creates a new simple configuration for this module.\n\nYou must give your pull to refresh module a unique id.\nThis id will be added to the pull to refresh view.\n\n\n    config \"ptr\"\n\n",
+        "type": "String -> PullToRefresh.Config msg"
+      },
+      {
+        "name": "init",
+        "comment": " Initializes the module.\nYou must pass it a `Config` object\n\n    config : Config Msg\n    config =\n        Ptr.config \"ptr\"\n\n    Ptr.init config\n\n",
+        "type": "PullToRefresh.Config msg -> ( PullToRefresh.Model, Platform.Cmd.Cmd PullToRefresh.Msg )"
+      },
+      {
+        "name": "isLoading",
+        "comment": " Returns `True` if it's currently loading\n",
+        "type": "PullToRefresh.Model -> Bool"
+      },
+      {
+        "name": "stopLoading",
+        "comment": " You must call this function has soon has your refresh `Cmd` is finished executing so that the pull to refresh can be stopped\n\n    stopLoading PtrMsg\n\n",
+        "type": "(PullToRefresh.Msg -> msg) -> Platform.Cmd.Cmd msg"
+      },
+      {
+        "name": "subscriptions",
+        "comment": " Subscriptions for this module\n\n    config : Config Msg\n    config =\n        Ptr.config \"ptr\"\n\n    subscriptions : Model -> Sub Msg\n    subscriptions model =\n        Ptr.subscriptions PtrMsg config model.ptr\n\n",
+        "type": "(PullToRefresh.Msg -> msg) -> PullToRefresh.Config msg -> PullToRefresh.Model -> Platform.Sub.Sub msg"
+      },
+      {
+        "name": "update",
+        "comment": " Update function to call when you receive messages for this module\n\n    config : Config Msg\n    config =\n        Ptr.config \"ptr\"\n\n    update : Msg -> Model -> ( Model, Cmd Msg )\n    update msg model =\n        case msg of\n            PtrMsg msg_ ->\n                let\n                    ( ptr, cmd ) =\n                        Ptr.update PtrMsg msg_ config model.ptr\n                in\n                    ( { model | ptr = ptr }, cmd )\n\n",
+        "type": "(PullToRefresh.Msg -> msg) -> PullToRefresh.Msg -> PullToRefresh.Config msg -> PullToRefresh.Model -> ( PullToRefresh.Model, Platform.Cmd.Cmd msg )"
+      },
+      {
+        "name": "view",
+        "comment": " View that displays your content and handles the pull to refresh behavior.\n\n    config : Config Msg\n    config =\n        Ptr.config \"ptr\"\n\n    view : Model -> Html Msg\n    view model =\n        div\n            [ style\n                [ ( \"border\", \"1px solid #000\" )\n                , ( \"margin\", \"auto\" )\n                , ( \"height\", \"500px\" )\n                , ( \"width\", \"300px\" )\n                , ( \"position\", \"relative\" )\n                ]\n            ]\n            [ Ptr.view PtrMsg\n                config\n                model.ptr\n                []\n                [ div\n                    []\n                    [ content ]\n                ]\n            ]\n\n",
+        "type": "(PullToRefresh.Msg -> msg) -> PullToRefresh.Config msg -> PullToRefresh.Model -> List (Html.Attribute msg) -> List (Html.Html msg) -> Html.Html msg"
+      },
+      {
+        "name": "withAnimationDuration",
+        "comment": " Sets duration of animation when the pulled view is returning back to its initial position\n\n    config \"ptr\" |> withAnimationDuration (150 * millisecond)\n\n",
+        "type": "Time.Time -> PullToRefresh.Config msg -> PullToRefresh.Config msg"
+      },
+      {
+        "name": "withAnimationEasingFunc",
+        "comment": " Sets the easing function to use for the transition when the pulled view will return back to its initial position\n\n    config \"ptr\" |> withAnimationEasingFunc inOutQuad\n\n",
+        "type": "Ease.Easing -> PullToRefresh.Config msg -> PullToRefresh.Config msg"
+      },
+      {
+        "name": "withLoadingContent",
+        "comment": " Content to be displayed when refreshing is in progress\n\n    config \"ptr\" |> withLoadingContent (div [] [ text \"Loading ...\" ])\n\n",
+        "type": "Html.Html msg -> PullToRefresh.Config msg -> PullToRefresh.Config msg"
+      },
+      {
+        "name": "withManualScroll",
+        "comment": " Wether you want to handle scroll event yourself or not.\n\n**Only do this if you have another module that needs scroll events on the same element.\nSee `cmdFromScrollEvent` function for more information on usage.\n",
+        "type": "Bool -> PullToRefresh.Config msg -> PullToRefresh.Config msg"
+      },
+      {
+        "name": "withMaxDistance",
+        "comment": " Sets the maximum distance of the pulled content from the top of the screen\n\n    config \"ptr\" |> withMaxDistance 100\n\n",
+        "type": "Float -> PullToRefresh.Config msg -> PullToRefresh.Config msg"
+      },
+      {
+        "name": "withMinLoadingDuration",
+        "comment": " Sets a minimum duration to wait before hiding the loading icon, even if `stopLoading` has been called\n",
+        "type": "Time.Time -> PullToRefresh.Config msg -> PullToRefresh.Config msg"
+      },
+      {
+        "name": "withPullContent",
+        "comment": " Content to be displayed when you are pulling the view but the distance does not exceed the trigger distance yet.\n\n    config \"ptr\" |> withPullContent (div [] [ text \"Pull to refresh\" ])\n\n",
+        "type": "Html.Html msg -> PullToRefresh.Config msg -> PullToRefresh.Config msg"
+      },
+      {
+        "name": "withRefreshCmd",
+        "comment": " Sets your `Cmd` to execute to refresh your content\n\n    config \"ptr\" |> withRefreshCmd executeRequest\n\n",
+        "type": "Platform.Cmd.Cmd msg -> PullToRefresh.Config msg -> PullToRefresh.Config msg"
+      },
+      {
+        "name": "withReleaseContent",
+        "comment": " Content to be displayed when you are pulling the view and the distance exceeds the trigger distance.\nThis means that when you'll release the click, your refresh `Cmd` will be executed\n\n    config \"ptr\" |> withReleaseContent (div [] [ text \"Release to refresh\" ])\n\n",
+        "type": "Html.Html msg -> PullToRefresh.Config msg -> PullToRefresh.Config msg"
+      },
+      {
+        "name": "withTriggerDistance",
+        "comment": " Sets distance the module will start calling your refresh `Cmd` when you release your click.\nThis is usally set to something like half the maximum distance\n\n    config \"ptr\" |> withMaxDistance 100 |> withTriggerDistance 40\n\n",
+        "type": "Float -> PullToRefresh.Config msg -> PullToRefresh.Config msg"
+      }
+    ],
+    "generated-with-elm-version": "0.18.0"
+  }
+]
