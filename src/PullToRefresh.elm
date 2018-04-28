@@ -418,11 +418,11 @@ view mapper (Config config) (Model model) attrs content =
                             [ ( "position", "absolute" )
                             , ( "margin", "0" )
                             , ( "padding", "0" )
-                            , ( "overflow", "scroll" )
                             , ( "left", "0" )
                             , ( "top", (toString yPos) ++ "px" )
                             , ( "right", "0" )
                             , ( "height", "100%" )
+                            , ( "overflow-y", "scroll" )
                             , ( "-webkit-overflow-scrolling"
                               , if canPullToRefresh (Model model) && Internal.isStarted model.state then
                                     "auto"
