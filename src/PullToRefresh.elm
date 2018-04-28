@@ -21,6 +21,7 @@ module PullToRefresh
         , withRefreshCmd
         , withManualScroll
         , cmdFromScrollEvent
+        , onScrollUpdate
         , isLoading
         )
 
@@ -40,7 +41,7 @@ This is working with mouse of touches.
 
 # Advanced
 
-@docs cmdFromScrollEvent
+@docs cmdFromScrollEvent, onScrollUpdate
 
 # Config
 
@@ -251,7 +252,7 @@ update : (Msg -> msg) -> Msg -> Config msg -> Model -> ( Model, Cmd msg )
 update mapper msg (Config config) (Model model) =
     case msg of
         OnScroll scrollY ->
-            ( Model { model | currScrollY = scrollY }, Cmd.none )
+            ( Model (onScroll scrollY model), Cmd.none )
 
         OnDown pos ->
             ( Model { model | state = Internal.start pos model.state }, Cmd.none )
@@ -291,6 +292,23 @@ update mapper msg (Config config) (Model model) =
 
         OnUpdateFrame diff ->
             ( Model { model | state = Internal.updateAnim config.animationDuration diff model.state }, Cmd.none )
+
+
+onScroll : Float -> Internal.Model -> Internal.Model
+onScroll scrollY model =
+    { model | currScrollY = scrollY }
+
+
+{-| Like `cmdFromScrollEvent` except that it returns the updated `Model` instead of sending a `Cmd`
+-}
+onScrollUpdate : JD.Value -> Model -> Model
+onScrollUpdate value (Model model) =
+    case JD.decodeValue (Internal.decodeScrollPos) value of
+        Ok scrollY ->
+            Model (onScroll scrollY model)
+
+        Err _ ->
+            Model model
 
 
 {-| **Only use this function if you handle `on "scroll"` event yourself**
