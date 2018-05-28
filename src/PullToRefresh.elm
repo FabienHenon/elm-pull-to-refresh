@@ -442,7 +442,7 @@ view mapper (Config config) (Model model) attrs content =
                             , ( "height", "100%" )
                             , ( "overflow-y", "scroll" )
                             , ( "-webkit-overflow-scrolling"
-                              , if canPullToRefresh (Model model) && Internal.isStarted model.state then
+                              , if yPos > 0 then
                                     "auto"
                                 else
                                     "touch"
