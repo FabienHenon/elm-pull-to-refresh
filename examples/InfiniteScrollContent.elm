@@ -1,10 +1,10 @@
 module InfiniteScrollContent exposing (main)
 
-import InfiniteScroll as IS
 import Html exposing (Html, div, p, text)
 import Html.Attributes exposing (style)
 import Html.Events as Events
 import Http
+import InfiniteScroll as IS
 import Json.Decode as JD
 import PullToRefresh as PR
 
@@ -57,7 +57,7 @@ init =
         ( pullToRefresh, cmd ) =
             PR.init pullToRefreshConfig
     in
-        ( { model | infScroll = IS.startLoading model.infScroll }, Cmd.batch [ Cmd.map PullToRefreshMsg cmd, loadContent ] )
+    ( { model | infScroll = IS.startLoading model.infScroll }, Cmd.batch [ Cmd.map PullToRefreshMsg cmd, loadContent ] )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -68,14 +68,14 @@ update msg model =
                 ( infScroll, cmd ) =
                     IS.update InfiniteScrollMsg msg_ model.infScroll
             in
-                ( { model | infScroll = infScroll }, cmd )
+            ( { model | infScroll = infScroll }, cmd )
 
         PullToRefreshMsg msg_ ->
             let
                 ( pullToRefresh, cmd ) =
                     PR.update PullToRefreshMsg msg_ pullToRefreshConfig model.pullToRefresh
             in
-                ( { model | pullToRefresh = pullToRefresh }, cmd )
+            ( { model | pullToRefresh = pullToRefresh }, cmd )
 
         OnDataRetrieved (Err _) ->
             let
@@ -85,7 +85,7 @@ update msg model =
                 ptrCmd =
                     PR.stopLoading PullToRefreshMsg
             in
-                ( { model | infScroll = infScroll }, ptrCmd )
+            ( { model | infScroll = infScroll }, ptrCmd )
 
         OnDataRetrieved (Ok result) ->
             let
@@ -98,7 +98,7 @@ update msg model =
                 ptrCmd =
                     PR.stopLoading PullToRefreshMsg
             in
-                ( { model | content = content, infScroll = infScroll }, ptrCmd )
+            ( { model | content = content, infScroll = infScroll }, ptrCmd )
 
         OnScroll value ->
             ( model
@@ -128,24 +128,20 @@ loadMore dir =
 view : Model -> Html Msg
 view model =
     div
-        [ style
-            [ ( "border", "1px solid #000" )
-            , ( "margin", "auto" )
-            , ( "height", "500px" )
-            , ( "width", "300px" )
-            , ( "position", "relative" )
-            ]
+        [ style "border" "1px solid #000"
+        , style "margin" "auto"
+        , style "height" "500px"
+        , style "width" "300px"
+        , style "position" "relative"
         ]
         [ PR.view PullToRefreshMsg
             pullToRefreshConfig
             model.pullToRefresh
-            [ style
-                [ ( "border", "1px solid #000" )
-                , ( "margin", "auto" )
-                ]
+            [ style "border" "1px solid #000"
+            , style "margin" "auto"
             , Events.on "scroll" (JD.map OnScroll JD.value)
             ]
-            ((List.map viewContentItem model.content) ++ loader model)
+            (List.map viewContentItem model.content ++ loader model)
         ]
 
 
@@ -158,14 +154,13 @@ loader : Model -> List (Html Msg)
 loader { infScroll } =
     if IS.isLoading infScroll then
         [ div
-            [ style
-                [ ( "color", "red" )
-                , ( "font-weight", "bold" )
-                , ( "text-align", "center" )
-                ]
+            [ style "color" "red"
+            , style "font-weight" "bold"
+            , style "text-align" "center"
             ]
             [ text "Loading ..." ]
         ]
+
     else
         []
 

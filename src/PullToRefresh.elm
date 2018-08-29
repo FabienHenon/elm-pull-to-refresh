@@ -1,29 +1,9 @@
-module PullToRefresh
-    exposing
-        ( Model
-        , Config
-        , Msg
-        , view
-        , init
-        , update
-        , config
-        , canPullToRefresh
-        , withMaxDistance
-        , withTriggerDistance
-        , withPullContent
-        , withReleaseContent
-        , withLoadingContent
-        , withMinLoadingDuration
-        , stopLoading
-        , withAnimationEasingFunc
-        , withAnimationDuration
-        , subscriptions
-        , withRefreshCmd
-        , withManualScroll
-        , cmdFromScrollEvent
-        , onScrollUpdate
-        , isLoading
-        )
+module PullToRefresh exposing
+    ( Model, Config, Msg
+    , init, update, view, subscriptions, canPullToRefresh, stopLoading, isLoading
+    , cmdFromScrollEvent, onScrollUpdate
+    , config, withMaxDistance, withTriggerDistance, withPullContent, withReleaseContent, withLoadingContent, withAnimationEasingFunc, withAnimationDuration, withRefreshCmd, withManualScroll, withMinLoadingDuration
+    )
 
 {-| Pull to refresh behavior in `Elm`.
 
@@ -31,35 +11,40 @@ You define a `Cmd` to be executed as soon as the screen is released after pullin
 
 This is working with mouse of touches.
 
+
 # Types
 
 @docs Model, Config, Msg
+
 
 # Use
 
 @docs init, update, view, subscriptions, canPullToRefresh, stopLoading, isLoading
 
+
 # Advanced
 
 @docs cmdFromScrollEvent, onScrollUpdate
 
+
 # Config
 
 @docs config, withMaxDistance, withTriggerDistance, withPullContent, withReleaseContent, withLoadingContent, withAnimationEasingFunc, withAnimationDuration, withRefreshCmd, withManualScroll, withMinLoadingDuration
+
 -}
 
-import Internal.PullToRefresh as Internal
+import AnimationFrame
+import Dom.Scroll
+import Ease exposing (Easing)
 import Html exposing (Html, div, text)
 import Html.Attributes as Attributes exposing (style)
 import Html.Events as Events
-import Dom.Scroll
-import Task
+import Internal.PullToRefresh as Internal
 import Json.Decode as JD
-import Touch
-import Time exposing (Time, second, millisecond)
-import AnimationFrame
-import Ease exposing (Easing)
 import Process
+import Task
+import Time exposing (Time, millisecond, second)
+import Touch
 
 
 {-| Model to keep in your module's state
@@ -91,7 +76,6 @@ type Msg
 
 You must give your pull to refresh module a unique id.
 This id will be added to the pull to refresh view.
-
 
     config "ptr"
 
@@ -197,8 +181,9 @@ withRefreshCmd refreshCmd (Config config) =
 
 {-| Wether you want to handle scroll event yourself or not.
 
-**Only do this if you have another module that needs scroll events on the same element.
+**Only do this if you have another module that needs scroll events on the same element.**
 See `cmdFromScrollEvent` function for more information on usage.
+
 -}
 withManualScroll : Bool -> Config msg -> Config msg
 withManualScroll manualScroll (Config config) =
@@ -245,7 +230,7 @@ init (Config config) =
                     ( ptr, cmd ) =
                         Ptr.update PtrMsg msg_ config model.ptr
                 in
-                    ( { model | ptr = ptr }, cmd )
+                ( { model | ptr = ptr }, cmd )
 
 -}
 update : (Msg -> msg) -> Msg -> Config msg -> Model -> ( Model, Cmd msg )
@@ -261,10 +246,11 @@ update mapper msg (Config config) (Model model) =
             ( Model model, Task.perform (OnUpWithTime pos) Time.now |> Cmd.map mapper )
 
         OnUpWithTime pos startTime ->
-            if (Internal.getContentTopPosition config model.state) >= config.triggerDist then
+            if Internal.getContentTopPosition config model.state >= config.triggerDist then
                 ( Model { model | state = Internal.end config.maxDist pos model.state, loading = True, startLoading = startTime }
                 , config.refreshCmd
                 )
+
             else
                 ( Model { model | state = Internal.reset config.triggerDist config.maxDist model.state }, Cmd.none )
 
@@ -273,11 +259,12 @@ update mapper msg (Config config) (Model model) =
                 newState =
                     Internal.move pos model.state
             in
-                ( Model { model | state = newState }, Cmd.none )
+            ( Model { model | state = newState }, Cmd.none )
 
         OnReset time ->
             if time >= (model.startLoading + config.minLoadingDuration) then
                 ( Model { model | loading = False, state = Internal.reset config.triggerDist config.maxDist model.state }, Cmd.none )
+
             else
                 -- We delay reset
                 ( Model model
@@ -303,7 +290,7 @@ onScroll scrollY model =
 -}
 onScrollUpdate : JD.Value -> Model -> Model
 onScrollUpdate value (Model model) =
-    case JD.decodeValue (Internal.decodeScrollPos) value of
+    case JD.decodeValue Internal.decodeScrollPos value of
         Ok scrollY ->
             Model (onScroll scrollY model)
 
@@ -331,40 +318,36 @@ You have to pass it a `Json.Decode.Value` directly coming from `on "scroll"` eve
     view : Model -> Html Msg
     view model =
         div
-            [ style
-                [ ( "border", "1px solid #000" )
-                , ( "margin", "auto" )
-                , ( "height", "500px" )
-                , ( "width", "300px" )
-                , ( "position", "relative" )
-                ]
+            [ style "border" "1px solid #000"
+            , style "margin" "auto"
+            , style "height" "500px"
+            , style "width" "300px"
+            , style "position" "relative"
             ]
             [ PR.view PullToRefreshMsg
                 pullToRefreshConfig
                 model.pullToRefresh
-                [ style
-                    [ ( "border", "1px solid #000" )
-                    , ( "margin", "auto" )
-                    ]
+                [ style "border" "1px solid #000"
+                , style "margin" "auto"
                 , on "scroll" (JsonDecoder.map OnScroll JsonDecoder.value)
                 ]
-                (model.content)
+                model.content
             ]
 
     update : Msg -> Model -> ( Model, Cmd Msg )
     update msg model =
         case msg of
             -- ... --
-
             PtrMsg msg_ ->
                 let
                     ( ptr, cmd ) =
                         Ptr.update PtrMsg msg_ config model.ptr
                 in
-                    ( { model | ptr = ptr }, cmd )
+                ( { model | ptr = ptr }, cmd )
 
             OnScroll value ->
                 ( model, Ptr.cmdFromScrollEvent PtrMsg value )
+
 -}
 cmdFromScrollEvent : (Msg -> msg) -> JD.Value -> Cmd msg
 cmdFromScrollEvent mapper value =
@@ -392,13 +375,11 @@ isLoading (Model { loading }) =
     view : Model -> Html Msg
     view model =
         div
-            [ style
-                [ ( "border", "1px solid #000" )
-                , ( "margin", "auto" )
-                , ( "height", "500px" )
-                , ( "width", "300px" )
-                , ( "position", "relative" )
-                ]
+            [ style "border" "1px solid #000"
+            , style "margin" "auto"
+            , style "height" "500px"
+            , style "width" "300px"
+            , style "position" "relative"
             ]
             [ Ptr.view PtrMsg
                 config
@@ -417,57 +398,57 @@ view mapper (Config config) (Model model) attrs content =
         yPos =
             Internal.getContentTopPosition config model.state
     in
-        div
-            [ style
-                [ ( "position", "absolute" )
-                , ( "margin", "0" )
-                , ( "padding", "0" )
-                , ( "overflow", "hidden" )
-                , ( "left", "0" )
-                , ( "top", "0" )
-                , ( "bottom", "0" )
-                , ( "right", "0" )
-                ]
-            ]
-            [ viewPullContent mapper (Config config) (Model model) yPos
-            , div
-                (attrs
-                    ++ [ style
-                            [ ( "position", "absolute" )
-                            , ( "margin", "0" )
-                            , ( "padding", "0" )
-                            , ( "left", "0" )
-                            , ( "top", (toString yPos) ++ "px" )
-                            , ( "right", "0" )
-                            , ( "height", "100%" )
-                            , ( "overflow-y", "scroll" )
-                            , ( "-webkit-overflow-scrolling"
-                              , if yPos > 0 then
-                                    "auto"
-                                else
-                                    "touch"
-                              )
-                            ]
-                       , Attributes.id config.id
-                       ]
-                    ++ (if config.manualScroll then
-                            []
-                        else
-                            [ Attributes.map mapper <| Events.on "scroll" (JD.map OnScroll Internal.decodeScrollPos) ]
-                       )
-                    ++ (if canPullToRefresh (Model model) || Internal.isStarted model.state then
-                            addPullToRefreshAttributes mapper (Model model)
-                        else
-                            []
-                       )
-                )
-                content
-            ]
+    div
+        [ style "position" "absolute"
+        , style "margin" "0"
+        , style "padding" "0"
+        , style "overflow" "hidden"
+        , style "left" "0"
+        , style "top" "0"
+        , style "bottom" "0"
+        , style "right" "0"
+        ]
+        [ viewPullContent mapper (Config config) (Model model) yPos
+        , div
+            (attrs
+                ++ [ style "position" "absolute"
+                   , style "margin" "0"
+                   , style "padding" "0"
+                   , style "left" "0"
+                   , style "top" (toString yPos ++ "px")
+                   , style "right" "0"
+                   , style "height" "100%"
+                   , style "overflow-y" "scroll"
+                   , style "-webkit-overflow-scrolling"
+                        (if yPos > 0 then
+                            "auto"
+
+                         else
+                            "touch"
+                        )
+                   , Attributes.id config.id
+                   ]
+                ++ (if config.manualScroll then
+                        []
+
+                    else
+                        [ Attributes.map mapper <| Events.on "scroll" (JD.map OnScroll Internal.decodeScrollPos) ]
+                   )
+                ++ (if canPullToRefresh (Model model) || Internal.isStarted model.state then
+                        addPullToRefreshAttributes mapper (Model model)
+
+                    else
+                        []
+                   )
+            )
+            content
+        ]
 
 
 {-| Returns `True` if the view is pullable, `False` if it's not.
 
 It's actually not pullable if the inner content has a scrollbar and this scrollbar is not at its top position
+
 -}
 canPullToRefresh : Model -> Bool
 canPullToRefresh (Model { currScrollY }) =
@@ -510,12 +491,14 @@ subscriptions mapper (Config config) (Model model) =
         Internal.Loading topPos elapsedTime ->
             if elapsedTime >= config.animationDuration then
                 Sub.none
+
             else
                 Sub.map mapper <| AnimationFrame.diffs OnUpdateFrame
 
         Internal.Ending topPos elapsedTime ->
             if elapsedTime >= config.animationDuration then
                 Sub.none
+
             else
                 Sub.map mapper <| AnimationFrame.diffs OnUpdateFrame
 
@@ -526,19 +509,19 @@ subscriptions mapper (Config config) (Model model) =
 
 addPullToRefreshAttributes : (Msg -> msg) -> Model -> List (Html.Attribute msg)
 addPullToRefreshAttributes mapper (Model model) =
-    ([ Attributes.map mapper <| onMouseDown OnDown
-     , Attributes.map mapper <| Touch.onStart (Touch.locate >> OnDown)
-     , Attributes.map mapper <| onMouseUp OnUp
-     , Attributes.map mapper <| Touch.onEndWithOptions { stopPropagation = False, preventDefault = False } (Touch.locate >> OnUp)
-     ]
+    [ Attributes.map mapper <| onMouseDown OnDown
+    , Attributes.map mapper <| Touch.onStart (Touch.locate >> OnDown)
+    , Attributes.map mapper <| onMouseUp OnUp
+    , Attributes.map mapper <| Touch.onEndWithOptions { stopPropagation = False, preventDefault = False } (Touch.locate >> OnUp)
+    ]
         ++ (if Internal.isStarted model.state then
                 [ Attributes.map mapper <| onMouseMove OnMove
                 , Attributes.map mapper <| Touch.onMove (Touch.locate >> OnMove)
                 ]
+
             else
                 []
            )
-    )
 
 
 onMouseDown : (Internal.Position -> Msg) -> Html.Attribute Msg
@@ -559,16 +542,14 @@ onMouseMove msg =
 viewPullContent : (Msg -> msg) -> Config msg -> Model -> Float -> Html msg
 viewPullContent mapper (Config config) (Model model) yPos =
     div
-        [ style
-            [ ( "position", "absolute" )
-            , ( "margin", "0" )
-            , ( "padding", "0" )
-            , ( "overflow", "hidden" )
-            , ( "left", "0" )
-            , ( "top", "0" )
-            , ( "height", (toString yPos) ++ "px" )
-            , ( "right", "0" )
-            ]
+        [ style "position" "absolute"
+        , style "margin" "0"
+        , style "padding" "0"
+        , style "overflow" "hidden"
+        , style "left" "0"
+        , style "top" "0"
+        , style "height" (toString yPos ++ "px")
+        , style "right" "0"
         ]
         (case model.state of
             Internal.None ->
@@ -580,6 +561,7 @@ viewPullContent mapper (Config config) (Model model) yPos =
             Internal.Moving _ _ ->
                 [ if yPos < config.triggerDist then
                     config.pullContent
+
                   else
                     config.releaseContent
                 ]
@@ -598,11 +580,9 @@ viewPullContent mapper (Config config) (Model model) yPos =
 
 defaultStyles : List (Html.Attribute msg)
 defaultStyles =
-    [ style
-        [ ( "text-align", "center" )
-        , ( "margin", "auto" )
-        , ( "padding", "20px" )
-        ]
+    [ style "text-align" "center"
+    , style "margin" "auto"
+    , style "padding" "20px"
     ]
 
 

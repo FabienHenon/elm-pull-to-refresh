@@ -1,11 +1,11 @@
 module WithSmallContent exposing (main)
 
-import PullToRefresh as PR
 import Html exposing (Html, div, p, text)
 import Html.Attributes exposing (style)
 import Process
-import Time exposing (second)
+import PullToRefresh as PR
 import Task
+import Time exposing (second)
 
 
 type Msg
@@ -46,7 +46,7 @@ init =
         ( pullToRefresh, cmd ) =
             PR.init pullToRefreshConfig
     in
-        ( initModel pullToRefresh, Cmd.map PullToRefreshMsg cmd )
+    ( initModel pullToRefresh, Cmd.map PullToRefreshMsg cmd )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -57,7 +57,7 @@ update msg model =
                 ( pullToRefresh, cmd ) =
                     PR.update PullToRefreshMsg msg_ pullToRefreshConfig model.pullToRefresh
             in
-                ( { model | pullToRefresh = pullToRefresh }, cmd )
+            ( { model | pullToRefresh = pullToRefresh }, cmd )
 
         Finished () ->
             ( model, PR.stopLoading PullToRefreshMsg )
@@ -66,13 +66,11 @@ update msg model =
 view : Model -> Html Msg
 view model =
     div
-        [ style
-            [ ( "border", "1px solid #000" )
-            , ( "margin", "auto" )
-            , ( "height", "500px" )
-            , ( "width", "300px" )
-            , ( "position", "relative" )
-            ]
+        [ style "border" "1px solid #000"
+        , style "margin" "auto"
+        , style "height" "500px"
+        , style "width" "300px"
+        , style "position" "relative"
         ]
         [ PR.view PullToRefreshMsg
             pullToRefreshConfig

@@ -1,9 +1,9 @@
-module Internal.PullToRefresh exposing (..)
+module Internal.PullToRefresh exposing (Config, Model, Position, State(..), decodeMousePosition, decodeScrollPos, end, getContentTopPosition, initModel, isStarted, move, reset, resistanceFunction, start, updateAnim, yPos)
 
-import Json.Decode as JD
-import Html exposing (Html)
-import Time exposing (Time)
 import Ease exposing (Easing)
+import Html exposing (Html)
+import Json.Decode as JD
+import Time exposing (Time)
 
 
 type State
@@ -163,6 +163,7 @@ updateAnim animationDuration diff state =
         Ending topPos elapsedTime ->
             if (elapsedTime + diff) >= animationDuration then
                 None
+
             else
                 Ending topPos (elapsedTime + diff)
 
@@ -171,6 +172,7 @@ yPos : Float -> Position -> Position -> Float
 yPos maxDist start curr =
     if start.y < curr.y then
         resistanceFunction maxDist (curr.y - start.y)
+
     else
         0
 
@@ -188,10 +190,10 @@ getContentTopPosition { maxDist, triggerDist, animationDuration, animationEasing
             yPos maxDist initial curr
 
         Loading maxTop elapsedTime ->
-            triggerDist + (maxTop - triggerDist) * (animationEasingFunc ((max (animationDuration - elapsedTime) 0) / animationDuration))
+            triggerDist + (maxTop - triggerDist) * animationEasingFunc (max (animationDuration - elapsedTime) 0 / animationDuration)
 
         Ending maxTop elapsedTime ->
-            maxTop * (animationEasingFunc ((max (animationDuration - elapsedTime) 0) / animationDuration))
+            maxTop * animationEasingFunc (max (animationDuration - elapsedTime) 0 / animationDuration)
 
 
 resistanceFunction : Float -> Float -> Float
